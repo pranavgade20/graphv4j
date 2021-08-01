@@ -20,7 +20,8 @@ public class Vertex<T> implements Serializable {
     private JPanel panel;
     private JPanel container;
     private transient volatile int screenX, screenY;
-    static Color background = new Color(Color.LIGHT_GRAY.getColorSpace(), Color.LIGHT_GRAY.getComponents(null), 0f);
+    final static Color background = new Color(Color.LIGHT_GRAY.getColorSpace(), Color.LIGHT_GRAY.getComponents(null), 0f);
+    public Color vertexColor = Color.BLACK;
     public Vertex(T value) {
         this.value = value;
         this.edges = new HashMap<>();
@@ -35,6 +36,7 @@ public class Vertex<T> implements Serializable {
             protected void paintChildren(Graphics g) {
                 valueText.setText(value.toString());
                 super.paintChildren(g);
+                g.setColor(vertexColor);
                 g.drawOval(getLocation().x + 5, getLocation().y + 5, 40, 40);
             }
         };
