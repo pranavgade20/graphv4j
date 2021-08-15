@@ -152,4 +152,23 @@ class AntColonyOptimisationAlgorithm implements Algorithm<AntSet> {
             }
         }
     }
+
+    @Override
+    public void clear(Graph<AntSet> graph) {
+        var startSet = new AntSet();
+        for (int i = 0; i < 500; i++) {
+            startSet.add(new Ant());
+        }
+        var origin = new Vertex<>(startSet);
+        origin.taint(Color.GREEN);
+        graph.addVertex(origin);
+        var target = new Vertex<>(new AntSet());
+        target.taint(Color.ORANGE);
+
+        this.home = origin;
+        this.target = target;
+
+        graph.addVertex(origin);
+        graph.addVertex(target);
+    }
 }

@@ -269,6 +269,7 @@ public class Graph<T> {
         clear.addActionListener(actionEvent -> {
             graphLock.lock();
             this.vertices = new ArrayList<>();
+            algorithm.clear(this);
             this.redraw();
             graphLock.unlock();
             panel.invalidate();

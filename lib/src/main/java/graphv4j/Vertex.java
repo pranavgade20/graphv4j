@@ -173,6 +173,9 @@ public class Vertex<T> implements Serializable {
                             "Vertex weight",
                             JOptionPane.QUESTION_MESSAGE
                     );
+                    if (weight == null) {
+                        getParentGraph().selectedVertex = null;
+                    }
                     if (weight.matches("\\d+")) {
                         try {
                             getParentGraph().selectedVertex.addEdge(Vertex.this, Integer.parseInt(weight));
