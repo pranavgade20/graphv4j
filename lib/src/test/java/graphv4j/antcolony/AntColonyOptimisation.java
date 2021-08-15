@@ -26,10 +26,10 @@ public class AntColonyOptimisation {
             startSet.add(new Ant());
         }
         var origin = new Vertex<>(startSet);
-        origin.vertexColor = Color.GREEN;
+        origin.taint(Color.GREEN);
         graph.addVertex(origin);
         var target = new Vertex<>(new AntSet());
-        target.vertexColor = Color.ORANGE;
+        target.taint(Color.ORANGE);
 
         var rand = new Random(42);
         for (int i = 0; i < 20; i++) {
@@ -58,6 +58,11 @@ class AntColonyOptimisationAlgorithm implements Algorithm<AntSet> {
         this.home = home;
         this.target = target;
         rand = new Random(42);
+    }
+
+    @Override
+    public Vertex<AntSet> getVertex() {
+        return new Vertex<>(new AntSet());
     }
 
     @Override

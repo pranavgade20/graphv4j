@@ -11,8 +11,9 @@ import java.util.concurrent.locks.ReentrantLock;
 public class Graph<T> {
     public volatile ArrayList<Vertex<T>> vertices;
     public transient volatile ReentrantLock graphLock = new ReentrantLock();
-    private transient Algorithm algorithm;
+    private transient Algorithm<T> algorithm;
 
+    transient Vertex<T> selectedVertex = null;
     transient Color foreground = Color.BLACK;
 
     private transient final JPanel panel;
@@ -27,7 +28,6 @@ public class Graph<T> {
         frame.setSize(700, 700);
         addMenuBar();
 
-
         frame.setVisible(true);
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
@@ -39,19 +39,52 @@ public class Graph<T> {
                 vertices.forEach(from -> {
                     from.edges.forEach((to, w) -> {
                         double angle = Math.atan((to.getLocation().y - (double)from.getLocation().y)/(to.getLocation().x - from.getLocation().x));
-                        g.setColor(w.color);
-                        if (from.getLocation().x < to.getLocation().x) g.drawLine(
-                                (int) (from.getLocation().x + from.getWidth()*0.5 + 20*Math.cos(angle)),
-                                (int) (from.getLocation().y + from.getHeight()*0.5 + 20*Math.sin(angle)),
-                                (int) (to.getLocation().x + to.getWidth()*0.5 - 20*Math.cos(angle)),
-                                (int) (to.getLocation().y + to.getHeight()*0.5 - 20*Math.sin(angle))
-                        );
-                        else g.drawLine(
-                                (int) (from.getLocation().x + from.getWidth()*0.5 - 20*Math.cos(angle)),
-                                (int) (from.getLocation().y + from.getHeight()*0.5 - 20*Math.sin(angle)),
-                                (int) (to.getLocation().x + to.getWidth()*0.5 + 20*Math.cos(angle)),
-                                (int) (to.getLocation().y + to.getHeight()*0.5 + 20*Math.sin(angle))
-                        );
+                        if (from.getLocation().x < to.getLocation().x) {
+                            g.setColor(w.color);
+                            g.drawLine(
+                                    (int) (from.getLocation().x + from.getWidth()*0.5 + 20*Math.cos(angle)),
+                                    (int) (from.getLocation().y + from.getHeight()*0.5 + 20*Math.sin(angle)),
+                                    (int) (to.getLocation().x + to.getWidth()*0.5 - 20*Math.cos(angle)),
+                                    (int) (to.getLocation().y + to.getHeight()*0.5 - 20*Math.sin(angle))
+                            );
+                            g.setColor(w.color);
+                            g.drawLine(
+                                    (int) (to.getLocation().x + to.getWidth()*0.5 - 20*Math.cos(angle)),
+                                    (int) (to.getLocation().y + to.getHeight()*0.5 - 20*Math.sin(angle)),
+                                    (int) (to.getLocation().x + to.getWidth()*0.5 - 20*Math.cos(angle) - 5*Math.cos(angle+Math.PI/6)),
+                                    (int) (to.getLocation().y + to.getHeight()*0.5 - 20*Math.sin(angle) - 5*Math.sin(angle+Math.PI/6))
+                            );
+                            g.setColor(w.color);
+                            g.drawLine(
+                                    (int) (to.getLocation().x + to.getWidth()*0.5 - 20*Math.cos(angle)),
+                                    (int) (to.getLocation().y + to.getHeight()*0.5 - 20*Math.sin(angle)),
+                                    (int) (to.getLocation().x + to.getWidth()*0.5 - 20*Math.cos(angle) - 5*Math.cos(angle-Math.PI/6)),
+                                    (int) (to.getLocation().y + to.getHeight()*0.5 - 20*Math.sin(angle) - 5*Math.sin(angle-Math.PI/6))
+                            );
+                        }
+                        else {
+                            g.setColor(w.color);
+                            g.drawLine(
+                                    (int) (from.getLocation().x + from.getWidth()*0.5 - 20*Math.cos(angle)),
+                                    (int) (from.getLocation().y + from.getHeight()*0.5 - 20*Math.sin(angle)),
+                                    (int) (to.getLocation().x + to.getWidth()*0.5 + 20*Math.cos(angle)),
+                                    (int) (to.getLocation().y + to.getHeight()*0.5 + 20*Math.sin(angle))
+                            );
+                            g.setColor(w.color);
+                            g.drawLine(
+                                    (int) (to.getLocation().x + to.getWidth()*0.5 + 20*Math.cos(angle)),
+                                    (int) (to.getLocation().y + to.getHeight()*0.5 + 20*Math.sin(angle)),
+                                    (int) (to.getLocation().x + to.getWidth()*0.5 + 20*Math.cos(angle) + 5*Math.cos(angle+Math.PI/6)),
+                                    (int) (to.getLocation().y + to.getHeight()*0.5 + 20*Math.sin(angle) + 5*Math.sin(angle+Math.PI/6))
+                            );
+                            g.setColor(w.color);
+                            g.drawLine(
+                                    (int) (to.getLocation().x + to.getWidth()*0.5 + 20*Math.cos(angle)),
+                                    (int) (to.getLocation().y + to.getHeight()*0.5 + 20*Math.sin(angle)),
+                                    (int) (to.getLocation().x + to.getWidth()*0.5 + 20*Math.cos(angle) + 5*Math.cos(angle-Math.PI/6)),
+                                    (int) (to.getLocation().y + to.getHeight()*0.5 + 20*Math.sin(angle) + 5*Math.sin(angle-Math.PI/6))
+                            );
+                        }
                         g.setColor(foreground);
                         g.drawString(String.valueOf(w.weight), (from.getLocation().x + to.getLocation().x)/2 + 25, (from.getLocation().y + to.getLocation().y)/2 + 25);
                     });
@@ -115,10 +148,15 @@ public class Graph<T> {
 
     public void addVertex(Vertex<T> vertex) {
         vertices.add(vertex);
+        vertex.setParentGraph(this);
         this.redraw();
 
         frame.revalidate();
         frame.repaint();
+    }
+
+    void repaint() {
+        panel.repaint();
     }
 
     private void redraw() {
@@ -221,6 +259,22 @@ public class Graph<T> {
         menu.add(open);
         menuBar.add(menu);
 
+        JMenuItem addVertex = new JMenuItem("Add Vertex");
+        addVertex.setAccelerator(KeyStroke.getKeyStroke('v'));
+        addVertex.addActionListener(actionEvent -> {
+            graphLock.lock();
+            Vertex<T> vertex = algorithm.getVertex();
+            if (vertex == null) JOptionPane.showMessageDialog(frame, "Adding vertices is not supported.");
+            else {
+                vertices.add(vertex);
+                vertex.setParentGraph(this);
+                panel.add(vertex.getPanel());
+            }
+            graphLock.unlock();
+            panel.invalidate();
+            panel.repaint();
+        });
+        menuBar.add(addVertex);
         JMenuItem next = new JMenuItem("Next");
         next.setAccelerator(KeyStroke.getKeyStroke('n'));
         next.addActionListener(actionEvent -> {

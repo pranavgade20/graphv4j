@@ -15,13 +15,14 @@ import java.util.HashMap;
 public class Vertex<T> implements Serializable {
     T value;
     protected volatile HashMap<Vertex<T>, Edge> edges;
+    private Graph<T> parentGraph = null;
 
     private JTextPane valueText;
     private JPanel panel;
     private JPanel container;
     private transient volatile int screenX, screenY;
     final static Color background = new Color(Color.LIGHT_GRAY.getColorSpace(), Color.LIGHT_GRAY.getComponents(null), 0f);
-    public Color vertexColor = Color.BLACK;
+    private Color vertexColor = Color.LIGHT_GRAY;
     public Vertex(T value) {
         this.value = value;
         this.edges = new HashMap<>();
@@ -37,6 +38,8 @@ public class Vertex<T> implements Serializable {
                 valueText.setText(value.toString());
                 super.paintChildren(g);
                 g.setColor(vertexColor);
+                g.fillOval(getLocation().x + 5, getLocation().y + 5, 40, 40);
+                g.setColor(Color.BLACK);
                 g.drawOval(getLocation().x + 5, getLocation().y + 5, 40, 40);
             }
         };
@@ -93,6 +96,14 @@ public class Vertex<T> implements Serializable {
         valueText.setText(value.toString());
     }
 
+    public void taint(Color color) {
+        vertexColor = color;
+    }
+
+    public Color getTaint() {
+        return vertexColor;
+    }
+
     public T getValue() {
         return value;
     }
@@ -121,6 +132,14 @@ public class Vertex<T> implements Serializable {
         return edges;
     }
 
+    public Graph<T> getParentGraph() {
+        return parentGraph;
+    }
+
+    void setParentGraph(Graph<T> parentGraph) {
+        this.parentGraph = parentGraph;
+    }
+
     private void addMouseListener(Component component) {
         component.addMouseMotionListener(new MouseMotionListener() {
             @Override
@@ -144,7 +163,37 @@ public class Vertex<T> implements Serializable {
         component.addMouseListener(new MouseListener() {
             @Override
             public void mouseClicked(MouseEvent mouseEvent) {
-
+                getParentGraph().graphLock.lock();
+                if (getParentGraph().selectedVertex == null || getParentGraph().selectedVertex == Vertex.this)
+                    getParentGraph().selectedVertex = Vertex.this;
+                else {
+                    String weight = JOptionPane.showInputDialog(
+                            Vertex.this.panel,
+                            "Vertex weight:",
+                            "Vertex weight",
+                            JOptionPane.QUESTION_MESSAGE
+                    );
+                    if (weight.matches("\\d+")) {
+                        try {
+                            getParentGraph().selectedVertex.addEdge(Vertex.this, Integer.parseInt(weight));
+                            getParentGraph().selectedVertex = null;
+                        } catch (Exception e) {
+                            JOptionPane.showMessageDialog(
+                                    Vertex.this.panel,
+                                    "Please enter a valid weight!",
+                                    "Weight invalid!",
+                                    JOptionPane.ERROR_MESSAGE);
+                        }
+                    } else {
+                        JOptionPane.showMessageDialog(
+                                Vertex.this.panel,
+                                "Please enter a valid weight!",
+                                "Weight invalid!",
+                                JOptionPane.ERROR_MESSAGE);
+                    }
+                    getParentGraph().graphLock.unlock();
+                    getParentGraph().repaint();
+                }
             }
 
             @Override
