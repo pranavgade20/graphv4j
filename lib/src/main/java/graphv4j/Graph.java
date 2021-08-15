@@ -61,6 +61,12 @@ public class Graph<T> {
                                     (int) (to.getLocation().x + to.getWidth()*0.5 - 20*Math.cos(angle) - 5*Math.cos(angle-Math.PI/6)),
                                     (int) (to.getLocation().y + to.getHeight()*0.5 - 20*Math.sin(angle) - 5*Math.sin(angle-Math.PI/6))
                             );
+                            g.setColor(foreground);
+                            g.drawString(
+                                    String.valueOf(w.weight),
+                                    (int) ((to.getLocation().x + to.getWidth()*0.5 - 20*Math.cos(angle))*0.9 + ((from.getLocation().x + from.getWidth()*0.5 + 20*Math.cos(angle))*0.1)),
+                                    (int) ((to.getLocation().y + to.getHeight()*0.5 - 20*Math.sin(angle))*0.9 + ((from.getLocation().y + from.getHeight()*0.5 + 20*Math.sin(angle))*0.1))
+                            );
                         }
                         else {
                             g.setColor(w.color);
@@ -84,9 +90,13 @@ public class Graph<T> {
                                     (int) (to.getLocation().x + to.getWidth()*0.5 + 20*Math.cos(angle) + 5*Math.cos(angle-Math.PI/6)),
                                     (int) (to.getLocation().y + to.getHeight()*0.5 + 20*Math.sin(angle) + 5*Math.sin(angle-Math.PI/6))
                             );
+                            g.setColor(foreground);
+                            g.drawString(
+                                    String.valueOf(w.weight),
+                                    (int) ((to.getLocation().x + to.getWidth()*0.5 + 20*Math.cos(angle))*0.9 + ((from.getLocation().x + from.getWidth()*0.5 - 20*Math.cos(angle))*0.1)),
+                                    (int) ((to.getLocation().y + to.getHeight()*0.5 + 20*Math.sin(angle))*0.9 + ((from.getLocation().y + from.getHeight()*0.5 - 20*Math.sin(angle))*0.1))
+                            );
                         }
-                        g.setColor(foreground);
-                        g.drawString(String.valueOf(w.weight), (from.getLocation().x + to.getLocation().x)/2 + 25, (from.getLocation().y + to.getLocation().y)/2 + 25);
                     });
                 });
                 graphLock.unlock();
@@ -160,7 +170,6 @@ public class Graph<T> {
     }
 
     private void redraw() {
-//        graphLock.lock();
         LinkedList<Vertex<T>> temp = new LinkedList<>(vertices);
 
         panel.removeAll();
@@ -198,7 +207,6 @@ public class Graph<T> {
             panel.add(ordered.get(i).getPanel());
             (ordered.get(i)).setLocation((int)x + pagex, (int)y + pagey);
         }
-//        graphLock.unlock();
     }
 
     int i = 0;
@@ -254,9 +262,19 @@ public class Graph<T> {
             else {
                 System.out.println("No Selection");
             }
-
         });
         menu.add(open);
+        JMenuItem clear = new JMenuItem("Clear");
+        clear.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_D, InputEvent.CTRL_DOWN_MASK));
+        clear.addActionListener(actionEvent -> {
+            graphLock.lock();
+            this.vertices = new ArrayList<>();
+            this.redraw();
+            graphLock.unlock();
+            panel.invalidate();
+            panel.repaint();
+        });
+        menu.add(clear);
         menuBar.add(menu);
 
         JMenuItem addVertex = new JMenuItem("Add Vertex");
