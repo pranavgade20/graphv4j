@@ -74,14 +74,15 @@ class AntColonyOptimisationAlgorithm implements Algorithm<AntSet> {
         }));
         for (Vertex<AntSet> vertex : graph.vertices) {
             //ants moving towards food
-            LinkedList<Map.Entry<Vertex<AntSet>, Integer>> vertexWeightsToFood = new LinkedList<>();
+            LinkedList<Map.Entry<Vertex<AntSet>, Double>> vertexWeightsToFood = new LinkedList<>();
+            double totalWeightToFood = 0;
             for (Map.Entry<Vertex<AntSet>, Edge> entry : vertex.getEdges().entrySet()) {
                 Vertex<AntSet> v = entry.getKey();
                 Edge e = entry.getValue();
 
-                vertexWeightsToFood.add(new AbstractMap.SimpleEntry<>(v, e.weight*(260+(5*e.color.getRed())-e.color.getGreen())));
+                totalWeightToFood += e.weight*(260+(5*e.color.getRed())-e.color.getGreen());
+                vertexWeightsToFood.add(new AbstractMap.SimpleEntry<>(v, totalWeightToFood));
             }
-            double totalWeightToFood = vertexWeightsToFood.stream().mapToInt(Map.Entry::getValue).sum();
 
             double totalAntsToMoveToFood = vertex.getValue().stream().filter(a -> !a.moved && a.searching).count();
             int movedAnts = 0;
@@ -113,14 +114,15 @@ class AntColonyOptimisationAlgorithm implements Algorithm<AntSet> {
             }
 
             // ants moving towards home
-            LinkedList<Map.Entry<Vertex<AntSet>, Integer>> vertexWeightsToHome = new LinkedList<>();
+            LinkedList<Map.Entry<Vertex<AntSet>, Double>> vertexWeightsToHome = new LinkedList<>();
+            double totalWeightToHome = 0;
             for (Map.Entry<Vertex<AntSet>, Edge> entry : vertex.getEdges().entrySet()) {
                 Vertex<AntSet> v = entry.getKey();
                 Edge e = entry.getValue();
 
-                vertexWeightsToHome.add(new AbstractMap.SimpleEntry<>(v, e.weight*(1+e.color.getGreen())));
+                totalWeightToHome += e.weight*(1+e.color.getGreen());
+                vertexWeightsToHome.add(new AbstractMap.SimpleEntry<>(v, totalWeightToHome));
             }
-            double totalWeightToHome = vertexWeightsToHome.stream().mapToInt(Map.Entry::getValue).sum();
 
             double totalAntsToMoveToHome = vertex.getValue().stream().filter(a -> !a.moved && !a.searching).count();
             movedAnts = 0;
