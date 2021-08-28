@@ -10,12 +10,13 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.AbstractMap;
 import java.util.HashMap;
 
-public class Vertex<T> implements Serializable {
-    T value;
-    protected volatile HashMap<Vertex<T>, Edge> edges;
-    private Graph<T> parentGraph = null;
+public class Vertex<V, E> implements Serializable {
+    V value;
+    public volatile HashMap<Vertex<V, E>, Edge<E>> edges;
+    private Graph<V, E> parentGraph = null;
 
     private JTextPane valueText;
     private JPanel panel;
@@ -23,7 +24,7 @@ public class Vertex<T> implements Serializable {
     private transient volatile int screenX, screenY;
     final static Color background = new Color(Color.LIGHT_GRAY.getColorSpace(), Color.LIGHT_GRAY.getComponents(null), 0f);
     private Color vertexColor = Color.LIGHT_GRAY;
-    public Vertex(T value) {
+    public Vertex(V value) {
         this.value = value;
         this.edges = new HashMap<>();
 
@@ -74,24 +75,7 @@ public class Vertex<T> implements Serializable {
         addMouseListener(valueText);
     }
 
-    public void addEdge(Vertex<T> vertex, Edge edge) {
-        if (vertex == this) return;
-        edges.put(vertex, edge);
-    }
-
-    public void addEdge(Vertex<T> vertex, Color color) {
-        addEdge(vertex, new Edge(1, color));
-    }
-
-    public void addEdge(Vertex<T> vertex, int weight) {
-        addEdge(vertex, new Edge(weight, Color.black));
-    }
-
-    public void addEdge(Vertex<T> vertex) {
-        addEdge(vertex, new Edge(1, Color.BLACK));
-    }
-
-    public void setValue(T value) {
+    public void setValue(V value) {
         this.value = value;
         valueText.setText(value.toString());
     }
@@ -104,7 +88,7 @@ public class Vertex<T> implements Serializable {
         return vertexColor;
     }
 
-    public T getValue() {
+    public V getValue() {
         return value;
     }
 
@@ -128,15 +112,15 @@ public class Vertex<T> implements Serializable {
         return panel;
     }
 
-    public HashMap<Vertex<T>, Edge> getEdges() {
+    public HashMap<Vertex<V, E>, Edge<E>> getEdges() {
         return edges;
     }
 
-    public Graph<T> getParentGraph() {
+    public Graph<V, E> getParentGraph() {
         return parentGraph;
     }
 
-    void setParentGraph(Graph<T> parentGraph) {
+    void setParentGraph(Graph<V, E> parentGraph) {
         this.parentGraph = parentGraph;
     }
 
@@ -163,40 +147,27 @@ public class Vertex<T> implements Serializable {
         component.addMouseListener(new MouseListener() {
             @Override
             public void mouseClicked(MouseEvent mouseEvent) {
+                if (mouseEvent.getButton() == MouseEvent.BUTTON3) {
+                    parentGraph.changeTaint(Vertex.this);
+                    return;
+                }
                 getParentGraph().graphLock.lock();
-                if (getParentGraph().selectedVertex == null || getParentGraph().selectedVertex == Vertex.this)
+                if (getParentGraph().selectedVertex == null)
                     getParentGraph().selectedVertex = Vertex.this;
                 else {
-                    String weight = JOptionPane.showInputDialog(
-                            Vertex.this.panel,
-                            "Vertex weight:",
-                            "Vertex weight",
-                            JOptionPane.QUESTION_MESSAGE
-                    );
-                    if (weight == null) {
-                        getParentGraph().selectedVertex = null;
-                    }
-                    if (weight.matches("\\d+")) {
-                        try {
-                            getParentGraph().selectedVertex.addEdge(Vertex.this, Integer.parseInt(weight));
-                            getParentGraph().selectedVertex = null;
-                        } catch (Exception e) {
-                            JOptionPane.showMessageDialog(
-                                    Vertex.this.panel,
-                                    "Please enter a valid weight!",
-                                    "Weight invalid!",
-                                    JOptionPane.ERROR_MESSAGE);
-                        }
+                    if (getParentGraph().addEdge(getParentGraph().selectedVertex, Vertex.this)) {
+                        getParentGraph().history.push(new AbstractMap.SimpleEntry<>(getParentGraph().selectedVertex, Vertex.this));
                     } else {
                         JOptionPane.showMessageDialog(
                                 Vertex.this.panel,
-                                "Please enter a valid weight!",
-                                "Weight invalid!",
+                                "Couldn't add edge between these vertices.",
+                                "Adding edge failed!",
                                 JOptionPane.ERROR_MESSAGE);
                     }
-                    getParentGraph().graphLock.unlock();
-                    getParentGraph().repaint();
+                    getParentGraph().selectedVertex = null;
                 }
+                getParentGraph().graphLock.unlock();
+                getParentGraph().repaint();
             }
 
             @Override

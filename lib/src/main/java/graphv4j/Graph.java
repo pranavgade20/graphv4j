@@ -8,12 +8,13 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class Graph<T> {
-    public volatile ArrayList<Vertex<T>> vertices;
+public class Graph<V, E> {
+    public volatile ArrayList<Vertex<V, E>> vertices;
     public transient volatile ReentrantLock graphLock = new ReentrantLock();
-    private transient Algorithm<T> algorithm;
+    private transient Algorithm<V, E> algorithm;
 
-    transient Vertex<T> selectedVertex = null;
+    transient Vertex<V, E> selectedVertex = null;
+    transient LinkedList<Map.Entry<Vertex<V, E>, Vertex<V, E>>> history = new LinkedList<>();
     transient Color foreground = Color.BLACK;
 
     private transient final JPanel panel;
@@ -40,21 +41,19 @@ public class Graph<T> {
                     from.edges.forEach((to, w) -> {
                         double angle = Math.atan((to.getLocation().y - (double)from.getLocation().y)/(to.getLocation().x - from.getLocation().x));
                         if (from.getLocation().x < to.getLocation().x) {
-                            g.setColor(w.color);
+                            g.setColor(new Color(w.color.getRed(), w.color.getGreen(), w.color.getBlue(), 122));
                             g.drawLine(
                                     (int) (from.getLocation().x + from.getWidth()*0.5 + 20*Math.cos(angle)),
                                     (int) (from.getLocation().y + from.getHeight()*0.5 + 20*Math.sin(angle)),
                                     (int) (to.getLocation().x + to.getWidth()*0.5 - 20*Math.cos(angle)),
                                     (int) (to.getLocation().y + to.getHeight()*0.5 - 20*Math.sin(angle))
                             );
-                            g.setColor(w.color);
                             g.drawLine(
                                     (int) (to.getLocation().x + to.getWidth()*0.5 - 20*Math.cos(angle)),
                                     (int) (to.getLocation().y + to.getHeight()*0.5 - 20*Math.sin(angle)),
                                     (int) (to.getLocation().x + to.getWidth()*0.5 - 20*Math.cos(angle) - 5*Math.cos(angle+Math.PI/6)),
                                     (int) (to.getLocation().y + to.getHeight()*0.5 - 20*Math.sin(angle) - 5*Math.sin(angle+Math.PI/6))
                             );
-                            g.setColor(w.color);
                             g.drawLine(
                                     (int) (to.getLocation().x + to.getWidth()*0.5 - 20*Math.cos(angle)),
                                     (int) (to.getLocation().y + to.getHeight()*0.5 - 20*Math.sin(angle)),
@@ -63,27 +62,25 @@ public class Graph<T> {
                             );
                             g.setColor(foreground);
                             g.drawString(
-                                    String.valueOf(w.weight),
+                                    String.valueOf(w.value),
                                     (int) ((to.getLocation().x + to.getWidth()*0.5 - 20*Math.cos(angle))*0.9 + ((from.getLocation().x + from.getWidth()*0.5 + 20*Math.cos(angle))*0.1)),
                                     (int) ((to.getLocation().y + to.getHeight()*0.5 - 20*Math.sin(angle))*0.9 + ((from.getLocation().y + from.getHeight()*0.5 + 20*Math.sin(angle))*0.1))
                             );
                         }
                         else {
-                            g.setColor(w.color);
+                            g.setColor(new Color(w.color.getRed(), w.color.getGreen(), w.color.getBlue(), 122));
                             g.drawLine(
                                     (int) (from.getLocation().x + from.getWidth()*0.5 - 20*Math.cos(angle)),
                                     (int) (from.getLocation().y + from.getHeight()*0.5 - 20*Math.sin(angle)),
                                     (int) (to.getLocation().x + to.getWidth()*0.5 + 20*Math.cos(angle)),
                                     (int) (to.getLocation().y + to.getHeight()*0.5 + 20*Math.sin(angle))
                             );
-                            g.setColor(w.color);
                             g.drawLine(
                                     (int) (to.getLocation().x + to.getWidth()*0.5 + 20*Math.cos(angle)),
                                     (int) (to.getLocation().y + to.getHeight()*0.5 + 20*Math.sin(angle)),
                                     (int) (to.getLocation().x + to.getWidth()*0.5 + 20*Math.cos(angle) + 5*Math.cos(angle+Math.PI/6)),
                                     (int) (to.getLocation().y + to.getHeight()*0.5 + 20*Math.sin(angle) + 5*Math.sin(angle+Math.PI/6))
                             );
-                            g.setColor(w.color);
                             g.drawLine(
                                     (int) (to.getLocation().x + to.getWidth()*0.5 + 20*Math.cos(angle)),
                                     (int) (to.getLocation().y + to.getHeight()*0.5 + 20*Math.sin(angle)),
@@ -92,7 +89,7 @@ public class Graph<T> {
                             );
                             g.setColor(foreground);
                             g.drawString(
-                                    String.valueOf(w.weight),
+                                    String.valueOf(w.value),
                                     (int) ((to.getLocation().x + to.getWidth()*0.5 + 20*Math.cos(angle))*0.9 + ((from.getLocation().x + from.getWidth()*0.5 - 20*Math.cos(angle))*0.1)),
                                     (int) ((to.getLocation().y + to.getHeight()*0.5 + 20*Math.sin(angle))*0.9 + ((from.getLocation().y + from.getHeight()*0.5 - 20*Math.sin(angle))*0.1))
                             );
@@ -144,7 +141,7 @@ public class Graph<T> {
                 pressy = mouseEvent.getYOnScreen();
                 pagex -= delx;
                 pagey -= dely;
-                for (Vertex<T> vertex : vertices) {
+                for (Vertex<V, E> vertex : vertices) {
                     vertex.setLocation(vertex.getLocation().x-delx, vertex.getLocation().y-dely);
                 }
             }
@@ -156,7 +153,7 @@ public class Graph<T> {
         });
     }
 
-    public void addVertex(Vertex<T> vertex) {
+    public void addVertex(Vertex<V, E> vertex) {
         vertices.add(vertex);
         vertex.setParentGraph(this);
         this.redraw();
@@ -165,24 +162,45 @@ public class Graph<T> {
         frame.repaint();
     }
 
+    public boolean addEdge(Vertex<V, E> a, Vertex<V, E> b, E value) {
+        graphLock.lock();
+        a.edges.put(b, new Edge<E>(value));
+        graphLock.unlock();
+        return true;
+    }
+
+    public boolean addEdge(Vertex<V, E> a, Vertex<V, E> b) {
+        graphLock.lock();
+        boolean ret = this.algorithm.addEdge(a, b);
+        graphLock.unlock();
+        return ret;
+    }
+
+    public void changeTaint(Vertex<V, E> vertex) {
+        graphLock.lock();
+        this.algorithm.changeTaint(vertex);
+        graphLock.unlock();
+        this.repaint();
+    }
+
     void repaint() {
         panel.repaint();
     }
 
     private void redraw() {
-        LinkedList<Vertex<T>> temp = new LinkedList<>(vertices);
+        LinkedList<Vertex<V, E>> temp = new LinkedList<>(vertices);
 
         panel.removeAll();
 
-        Deque<Vertex<T>> visited = new ArrayDeque<>();
-        LinkedList<Vertex<T>> ordered = new LinkedList<>();
-        HashSet<Vertex<T>> visitedCache = new HashSet<>();
+        Deque<Vertex<V, E>> visited = new ArrayDeque<>();
+        LinkedList<Vertex<V, E>> ordered = new LinkedList<>();
+        HashSet<Vertex<V, E>> visitedCache = new HashSet<>();
         while (!temp.isEmpty()) {
             visited.push(temp.stream().max(Comparator.comparingInt(a -> a.edges.size())).get());
             temp.remove(visited.peek());
 
             while (!visited.isEmpty()) {
-                Vertex<T> vertex = visited.removeFirst();
+                Vertex<V, E> vertex = visited.removeFirst();
                 if (!visitedCache.contains(vertex)) {
                     visitedCache.add(vertex);
                     ordered.add(vertex);
@@ -249,7 +267,7 @@ public class Graph<T> {
                     ObjectInputStream objStream = new ObjectInputStream(r);
                     this.pagex = objStream.readInt();
                     this.pagey = objStream.readInt();
-                    this.vertices = (ArrayList<Vertex<T>>) objStream.readObject();
+                    this.vertices = (ArrayList<Vertex<V, E>>) objStream.readObject();
                     panel.removeAll();
                     vertices.forEach(v -> panel.add(v.getPanel()));
                     frame.invalidate();
@@ -272,18 +290,32 @@ public class Graph<T> {
             algorithm.clear(this);
             this.redraw();
             graphLock.unlock();
+            history.clear();
             panel.invalidate();
             panel.repaint();
         });
         menu.add(clear);
+        JMenuItem undo = new JMenuItem("Undo");
+        undo.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK));
+        undo.addActionListener(actionEvent -> {
+            graphLock.lock();
+            if (history.size() > 0) {
+                history.peek().getKey().edges.remove(history.peek().getValue());
+                history.pop();
+            }
+            graphLock.unlock();
+            panel.invalidate();
+            panel.repaint();
+        });
+        menu.add(undo);
         menuBar.add(menu);
 
         JMenuItem addVertex = new JMenuItem("Add Vertex");
         addVertex.setAccelerator(KeyStroke.getKeyStroke('v'));
         addVertex.addActionListener(actionEvent -> {
             graphLock.lock();
-            Vertex<T> vertex = algorithm.getVertex();
-            if (vertex == null) JOptionPane.showMessageDialog(frame, "Adding vertices is not supported.");
+            Vertex<V, E> vertex = algorithm.getVertex(this);
+            if (vertex == null) JOptionPane.showMessageDialog(frame, "Can't add vertex.");
             else {
                 vertices.add(vertex);
                 vertex.setParentGraph(this);
