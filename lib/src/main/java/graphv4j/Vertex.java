@@ -30,7 +30,7 @@ public class Vertex<V, E> implements Serializable {
 
         panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.LINE_AXIS));
-        panel.setSize(50, 50);
+        panel.setSize(41, 41);
         panel.setBackground(background);
 
         container = new JPanel() {
@@ -39,12 +39,12 @@ public class Vertex<V, E> implements Serializable {
                 valueText.setText(value.toString());
                 super.paintChildren(g);
                 g.setColor(vertexColor);
-                g.fillOval(getLocation().x + 5, getLocation().y + 5, 40, 40);
+                g.fillOval(getLocation().x, getLocation().y, 40, 40);
                 g.setColor(Color.BLACK);
-                g.drawOval(getLocation().x + 5, getLocation().y + 5, 40, 40);
+                g.drawOval(getLocation().x, getLocation().y, 40, 40);
             }
         };
-        container.setSize(50, 50);
+        container.setSize(41, 41);
 
         container.setLayout(new GridBagLayout());
         container.setBackground(background);

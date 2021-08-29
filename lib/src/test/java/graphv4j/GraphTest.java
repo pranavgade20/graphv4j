@@ -4,20 +4,21 @@ import java.awt.*;
 
 public class GraphTest {
     public static void main(String[] args) {
-        class MyAlgo implements Algorithm<Integer> {
+        class MyAlgo implements Algorithm<Integer, Integer> {
             @Override
-            public void step(Graph<Integer> graph) {
+            public boolean step(Graph<Integer, Integer> graph) {
                 int i = graph.vertices.stream().mapToInt(integerVertex -> integerVertex.value).sum();
                 graph.addVertex(new Vertex<>(i));
                 graph.vertices.forEach(a -> graph.vertices.forEach(b ->
-                        a.addEdge(b, Color.ORANGE)
+                        a.edges.put(b, new Edge<>(1, Color.ORANGE))
                 ));
+                return true;
             }
         }
-        Graph<Integer> graph = new Graph<>();
-        var a = new Vertex<>(0);
-        var b = new Vertex<>(1);
-        a.addEdge(b);
+        Graph<Integer, Integer> graph = new Graph<>();
+        var a = new Vertex<Integer, Integer>(0);
+        var b = new Vertex<Integer, Integer>(1);
+        a.edges.put(b, new Edge<>(1, Color.ORANGE));
         graph.addVertex(a);
         graph.addVertex(b);
 

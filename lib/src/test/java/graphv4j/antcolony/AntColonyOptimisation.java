@@ -5,6 +5,7 @@ import graphv4j.Edge;
 import graphv4j.Graph;
 import graphv4j.Vertex;
 
+import javax.swing.*;
 import java.awt.*;
 import java.util.AbstractMap;
 import java.util.LinkedList;
@@ -18,17 +19,17 @@ public class AntColonyOptimisation {
         acd.setup();
     }
 
-    Graph<AntSet> graph;
+    Graph<AntSet, Integer> graph;
     void setup() {
         graph = new Graph<>();
         var startSet = new AntSet();
         for (int i = 0; i < 500; i++) {
             startSet.add(new Ant());
         }
-        var origin = new Vertex<>(startSet);
+        var origin = new Vertex<AntSet, Integer>(startSet);
         origin.taint(Color.GREEN);
         graph.addVertex(origin);
-        var target = new Vertex<>(new AntSet());
+        var target = new Vertex<AntSet, Integer>(new AntSet());
         target.taint(Color.ORANGE);
 
         var rand = new Random(42);
@@ -41,8 +42,8 @@ public class AntColonyOptimisation {
             graph.vertices.forEach(w -> {
                 if (rand.nextInt(100) < 6) {
                     int weight = rand.nextInt(10)+1;
-                    v.addEdge(w, weight);
-                    w.addEdge(v, weight);
+                    v.edges.put(w, new Edge<>(weight));
+                    w.edges.put(v, new Edge<>(weight));
                 }
             });
         });
@@ -51,36 +52,36 @@ public class AntColonyOptimisation {
     }
 }
 
-class AntColonyOptimisationAlgorithm implements Algorithm<AntSet> {
-    Vertex<AntSet> home, target;
+class AntColonyOptimisationAlgorithm implements Algorithm<AntSet, Integer> {
+    Vertex<AntSet, Integer> home, target;
     Random rand;
-    AntColonyOptimisationAlgorithm(Vertex<AntSet> home, Vertex<AntSet> target) {
+    AntColonyOptimisationAlgorithm(Vertex<AntSet, Integer> home, Vertex<AntSet, Integer> target) {
         this.home = home;
         this.target = target;
         rand = new Random(42);
     }
 
     @Override
-    public Vertex<AntSet> getVertex() {
+    public Vertex<AntSet, Integer> getVertex(Graph<AntSet, Integer> graph) {
         return new Vertex<>(new AntSet());
     }
 
     @Override
-    public void step(Graph<AntSet> graph) {
+    public boolean step(Graph<AntSet, Integer> graph) {
         graph.vertices.forEach(v -> v.getValue().forEach(ant -> ant.moved = false));
         graph.vertices.forEach(v -> v.getEdges().values().forEach(e -> {
             Color c = e.color;
             e.color = new Color((int) (c.getRed()*0.97), (int) (c.getGreen()*0.97), (int) (c.getBlue()*0.9));
         }));
-        for (Vertex<AntSet> vertex : graph.vertices) {
+        for (Vertex<AntSet, Integer> vertex : graph.vertices) {
             //ants moving towards food
-            LinkedList<Map.Entry<Vertex<AntSet>, Double>> vertexWeightsToFood = new LinkedList<>();
+            LinkedList<Map.Entry<Vertex<AntSet, Integer>, Double>> vertexWeightsToFood = new LinkedList<>();
             double totalWeightToFood = 0;
-            for (Map.Entry<Vertex<AntSet>, Edge> entry : vertex.getEdges().entrySet()) {
-                Vertex<AntSet> v = entry.getKey();
-                Edge e = entry.getValue();
+            for (Map.Entry<Vertex<AntSet, Integer>, Edge<Integer>> entry : vertex.getEdges().entrySet()) {
+                Vertex<AntSet, Integer> v = entry.getKey();
+                Edge<Integer> e = entry.getValue();
 
-                totalWeightToFood += e.weight*(260+(5*e.color.getRed())-e.color.getGreen());
+                totalWeightToFood += e.value *(260+(5*e.color.getRed())-e.color.getGreen());
                 vertexWeightsToFood.add(new AbstractMap.SimpleEntry<>(v, totalWeightToFood));
             }
 
@@ -114,13 +115,13 @@ class AntColonyOptimisationAlgorithm implements Algorithm<AntSet> {
             }
 
             // ants moving towards home
-            LinkedList<Map.Entry<Vertex<AntSet>, Double>> vertexWeightsToHome = new LinkedList<>();
+            LinkedList<Map.Entry<Vertex<AntSet, Integer>, Double>> vertexWeightsToHome = new LinkedList<>();
             double totalWeightToHome = 0;
-            for (Map.Entry<Vertex<AntSet>, Edge> entry : vertex.getEdges().entrySet()) {
-                Vertex<AntSet> v = entry.getKey();
-                Edge e = entry.getValue();
+            for (Map.Entry<Vertex<AntSet, Integer>, Edge<Integer>> entry : vertex.getEdges().entrySet()) {
+                Vertex<AntSet, Integer> v = entry.getKey();
+                Edge<Integer> e = entry.getValue();
 
-                totalWeightToHome += e.weight*(1+e.color.getGreen());
+                totalWeightToHome += e.value *(1+e.color.getGreen());
                 vertexWeightsToHome.add(new AbstractMap.SimpleEntry<>(v, totalWeightToHome));
             }
 
@@ -153,18 +154,19 @@ class AntColonyOptimisationAlgorithm implements Algorithm<AntSet> {
                 movedAnts++;
             }
         }
+        return true;
     }
 
     @Override
-    public void clear(Graph<AntSet> graph) {
+    public void clear(Graph<AntSet, Integer> graph) {
         var startSet = new AntSet();
         for (int i = 0; i < 500; i++) {
             startSet.add(new Ant());
         }
-        var origin = new Vertex<>(startSet);
+        var origin = new Vertex<AntSet, Integer>(startSet);
         origin.taint(Color.GREEN);
         graph.addVertex(origin);
-        var target = new Vertex<>(new AntSet());
+        var target = new Vertex<AntSet, Integer>(new AntSet());
         target.taint(Color.ORANGE);
 
         this.home = origin;
@@ -172,5 +174,24 @@ class AntColonyOptimisationAlgorithm implements Algorithm<AntSet> {
 
         graph.addVertex(origin);
         graph.addVertex(target);
+    }
+
+    @Override
+    public boolean addEdge(Vertex<AntSet, Integer> a, Vertex<AntSet, Integer> b) {
+        String weight = JOptionPane.showInputDialog(
+                "Vertex weight:",
+                JOptionPane.QUESTION_MESSAGE
+        );
+        if (weight == null) {
+            return false;
+        }
+        if (weight.matches("\\d+")) {
+            try {
+                a.edges.put(b, new Edge<>(Integer.parseInt(weight)));
+                return true;
+            } catch (Exception ignored) {
+            }
+        }
+        return false;
     }
 }

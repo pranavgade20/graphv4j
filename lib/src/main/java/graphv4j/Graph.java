@@ -17,7 +17,7 @@ public class Graph<V, E> {
     transient LinkedList<Map.Entry<Vertex<V, E>, Vertex<V, E>>> history = new LinkedList<>();
     transient Color foreground = Color.BLACK;
 
-    private transient final JPanel panel;
+    public transient final JPanel panel;
     private transient final JFrame frame;
     private volatile int pagex, pagey;
     private transient volatile int pressx, pressy;
@@ -39,60 +39,81 @@ public class Graph<V, E> {
                 super.paintChildren(g);
                 vertices.forEach(from -> {
                     from.edges.forEach((to, w) -> {
-                        double angle = Math.atan((to.getLocation().y - (double)from.getLocation().y)/(to.getLocation().x - from.getLocation().x));
-                        if (from.getLocation().x < to.getLocation().x) {
-                            g.setColor(new Color(w.color.getRed(), w.color.getGreen(), w.color.getBlue(), 122));
+                        if (from == to) {
+                            g.drawArc(from.getLocation().x, (int) (from.getLocation().y - (40*Math.sqrt(2) - 40/Math.sqrt(2))), 40, 40, -45, 270);
                             g.drawLine(
-                                    (int) (from.getLocation().x + from.getWidth()*0.5 + 20*Math.cos(angle)),
-                                    (int) (from.getLocation().y + from.getHeight()*0.5 + 20*Math.sin(angle)),
-                                    (int) (to.getLocation().x + to.getWidth()*0.5 - 20*Math.cos(angle)),
-                                    (int) (to.getLocation().y + to.getHeight()*0.5 - 20*Math.sin(angle))
+                                    (int) (to.getLocation().x + to.getWidth() * 0.5 - 20 / Math.sqrt(2)),
+                                    (int) (to.getLocation().y + to.getHeight() * 0.5 - 20 / Math.sqrt(2)),
+                                    (int) (to.getLocation().x + to.getWidth() * 0.5 - 20 / Math.sqrt(2) - 5 * Math.cos(Math.PI / 4 + Math.PI / 6)),
+                                    (int) (to.getLocation().y + to.getHeight() * 0.5 - 20 / Math.sqrt(2) - 5 * Math.sin(Math.PI / 4 + Math.PI / 6))
                             );
                             g.drawLine(
-                                    (int) (to.getLocation().x + to.getWidth()*0.5 - 20*Math.cos(angle)),
-                                    (int) (to.getLocation().y + to.getHeight()*0.5 - 20*Math.sin(angle)),
-                                    (int) (to.getLocation().x + to.getWidth()*0.5 - 20*Math.cos(angle) - 5*Math.cos(angle+Math.PI/6)),
-                                    (int) (to.getLocation().y + to.getHeight()*0.5 - 20*Math.sin(angle) - 5*Math.sin(angle+Math.PI/6))
-                            );
-                            g.drawLine(
-                                    (int) (to.getLocation().x + to.getWidth()*0.5 - 20*Math.cos(angle)),
-                                    (int) (to.getLocation().y + to.getHeight()*0.5 - 20*Math.sin(angle)),
-                                    (int) (to.getLocation().x + to.getWidth()*0.5 - 20*Math.cos(angle) - 5*Math.cos(angle-Math.PI/6)),
-                                    (int) (to.getLocation().y + to.getHeight()*0.5 - 20*Math.sin(angle) - 5*Math.sin(angle-Math.PI/6))
+                                    (int) (to.getLocation().x + to.getWidth() * 0.5 - 20 / Math.sqrt(2)),
+                                    (int) (to.getLocation().y + to.getHeight() * 0.5 - 20 / Math.sqrt(2)),
+                                    (int) (to.getLocation().x + to.getWidth() * 0.5 - 20 / Math.sqrt(2) - 5 * Math.cos(Math.PI / 4 - Math.PI / 6)),
+                                    (int) (to.getLocation().y + to.getHeight() * 0.5 - 20 / Math.sqrt(2) - 5 * Math.sin(Math.PI / 4 - Math.PI / 6))
                             );
                             g.setColor(foreground);
                             g.drawString(
                                     String.valueOf(w.value),
-                                    (int) ((to.getLocation().x + to.getWidth()*0.5 - 20*Math.cos(angle))*0.9 + ((from.getLocation().x + from.getWidth()*0.5 + 20*Math.cos(angle))*0.1)),
-                                    (int) ((to.getLocation().y + to.getHeight()*0.5 - 20*Math.sin(angle))*0.9 + ((from.getLocation().y + from.getHeight()*0.5 + 20*Math.sin(angle))*0.1))
+                                    from.getLocation().x,
+                                    (int) (from.getLocation().y - (40*Math.sqrt(2) - 40/Math.sqrt(2)))
                             );
-                        }
-                        else {
-                            g.setColor(new Color(w.color.getRed(), w.color.getGreen(), w.color.getBlue(), 122));
-                            g.drawLine(
-                                    (int) (from.getLocation().x + from.getWidth()*0.5 - 20*Math.cos(angle)),
-                                    (int) (from.getLocation().y + from.getHeight()*0.5 - 20*Math.sin(angle)),
-                                    (int) (to.getLocation().x + to.getWidth()*0.5 + 20*Math.cos(angle)),
-                                    (int) (to.getLocation().y + to.getHeight()*0.5 + 20*Math.sin(angle))
-                            );
-                            g.drawLine(
-                                    (int) (to.getLocation().x + to.getWidth()*0.5 + 20*Math.cos(angle)),
-                                    (int) (to.getLocation().y + to.getHeight()*0.5 + 20*Math.sin(angle)),
-                                    (int) (to.getLocation().x + to.getWidth()*0.5 + 20*Math.cos(angle) + 5*Math.cos(angle+Math.PI/6)),
-                                    (int) (to.getLocation().y + to.getHeight()*0.5 + 20*Math.sin(angle) + 5*Math.sin(angle+Math.PI/6))
-                            );
-                            g.drawLine(
-                                    (int) (to.getLocation().x + to.getWidth()*0.5 + 20*Math.cos(angle)),
-                                    (int) (to.getLocation().y + to.getHeight()*0.5 + 20*Math.sin(angle)),
-                                    (int) (to.getLocation().x + to.getWidth()*0.5 + 20*Math.cos(angle) + 5*Math.cos(angle-Math.PI/6)),
-                                    (int) (to.getLocation().y + to.getHeight()*0.5 + 20*Math.sin(angle) + 5*Math.sin(angle-Math.PI/6))
-                            );
-                            g.setColor(foreground);
-                            g.drawString(
-                                    String.valueOf(w.value),
-                                    (int) ((to.getLocation().x + to.getWidth()*0.5 + 20*Math.cos(angle))*0.9 + ((from.getLocation().x + from.getWidth()*0.5 - 20*Math.cos(angle))*0.1)),
-                                    (int) ((to.getLocation().y + to.getHeight()*0.5 + 20*Math.sin(angle))*0.9 + ((from.getLocation().y + from.getHeight()*0.5 - 20*Math.sin(angle))*0.1))
-                            );
+                        } else {
+                            double angle = Math.atan((to.getLocation().y - (double) from.getLocation().y) / (to.getLocation().x - from.getLocation().x));
+                            if (from.getLocation().x < to.getLocation().x) {
+                                g.setColor(new Color(w.color.getRed(), w.color.getGreen(), w.color.getBlue(), 122));
+                                g.drawLine(
+                                        (int) (from.getLocation().x + from.getWidth() * 0.5 + 20 * Math.cos(angle)),
+                                        (int) (from.getLocation().y + from.getHeight() * 0.5 + 20 * Math.sin(angle)),
+                                        (int) (to.getLocation().x + to.getWidth() * 0.5 - 20 * Math.cos(angle)),
+                                        (int) (to.getLocation().y + to.getHeight() * 0.5 - 20 * Math.sin(angle))
+                                );
+                                g.drawLine(
+                                        (int) (to.getLocation().x + to.getWidth() * 0.5 - 20 * Math.cos(angle)),
+                                        (int) (to.getLocation().y + to.getHeight() * 0.5 - 20 * Math.sin(angle)),
+                                        (int) (to.getLocation().x + to.getWidth() * 0.5 - 20 * Math.cos(angle) - 5 * Math.cos(angle + Math.PI / 6)),
+                                        (int) (to.getLocation().y + to.getHeight() * 0.5 - 20 * Math.sin(angle) - 5 * Math.sin(angle + Math.PI / 6))
+                                );
+                                g.drawLine(
+                                        (int) (to.getLocation().x + to.getWidth() * 0.5 - 20 * Math.cos(angle)),
+                                        (int) (to.getLocation().y + to.getHeight() * 0.5 - 20 * Math.sin(angle)),
+                                        (int) (to.getLocation().x + to.getWidth() * 0.5 - 20 * Math.cos(angle) - 5 * Math.cos(angle - Math.PI / 6)),
+                                        (int) (to.getLocation().y + to.getHeight() * 0.5 - 20 * Math.sin(angle) - 5 * Math.sin(angle - Math.PI / 6))
+                                );
+                                g.setColor(foreground);
+                                g.drawString(
+                                        String.valueOf(w.value),
+                                        (int) ((to.getLocation().x + to.getWidth() * 0.5 - 20 * Math.cos(angle)) * 0.9 + ((from.getLocation().x + from.getWidth() * 0.5 + 20 * Math.cos(angle)) * 0.1)),
+                                        (int) ((to.getLocation().y + to.getHeight() * 0.5 - 20 * Math.sin(angle)) * 0.9 + ((from.getLocation().y + from.getHeight() * 0.5 + 20 * Math.sin(angle)) * 0.1))
+                                );
+                            } else {
+                                g.setColor(new Color(w.color.getRed(), w.color.getGreen(), w.color.getBlue(), 122));
+                                g.drawLine(
+                                        (int) (from.getLocation().x + from.getWidth() * 0.5 - 20 * Math.cos(angle)),
+                                        (int) (from.getLocation().y + from.getHeight() * 0.5 - 20 * Math.sin(angle)),
+                                        (int) (to.getLocation().x + to.getWidth() * 0.5 + 20 * Math.cos(angle)),
+                                        (int) (to.getLocation().y + to.getHeight() * 0.5 + 20 * Math.sin(angle))
+                                );
+                                g.drawLine(
+                                        (int) (to.getLocation().x + to.getWidth() * 0.5 + 20 * Math.cos(angle)),
+                                        (int) (to.getLocation().y + to.getHeight() * 0.5 + 20 * Math.sin(angle)),
+                                        (int) (to.getLocation().x + to.getWidth() * 0.5 + 20 * Math.cos(angle) + 5 * Math.cos(angle + Math.PI / 6)),
+                                        (int) (to.getLocation().y + to.getHeight() * 0.5 + 20 * Math.sin(angle) + 5 * Math.sin(angle + Math.PI / 6))
+                                );
+                                g.drawLine(
+                                        (int) (to.getLocation().x + to.getWidth() * 0.5 + 20 * Math.cos(angle)),
+                                        (int) (to.getLocation().y + to.getHeight() * 0.5 + 20 * Math.sin(angle)),
+                                        (int) (to.getLocation().x + to.getWidth() * 0.5 + 20 * Math.cos(angle) + 5 * Math.cos(angle - Math.PI / 6)),
+                                        (int) (to.getLocation().y + to.getHeight() * 0.5 + 20 * Math.sin(angle) + 5 * Math.sin(angle - Math.PI / 6))
+                                );
+                                g.setColor(foreground);
+                                g.drawString(
+                                        String.valueOf(w.value),
+                                        (int) ((to.getLocation().x + to.getWidth() * 0.5 + 20 * Math.cos(angle)) * 0.9 + ((from.getLocation().x + from.getWidth() * 0.5 - 20 * Math.cos(angle)) * 0.1)),
+                                        (int) ((to.getLocation().y + to.getHeight() * 0.5 + 20 * Math.sin(angle)) * 0.9 + ((from.getLocation().y + from.getHeight() * 0.5 - 20 * Math.sin(angle)) * 0.1))
+                                );
+                            }
                         }
                     });
                 });
@@ -144,6 +165,7 @@ public class Graph<V, E> {
                 for (Vertex<V, E> vertex : vertices) {
                     vertex.setLocation(vertex.getLocation().x-delx, vertex.getLocation().y-dely);
                 }
+                repaint();
             }
 
             @Override
@@ -331,7 +353,15 @@ public class Graph<V, E> {
         next.addActionListener(actionEvent -> {
             if (this.algorithm != null) {
                 graphLock.lock();
-                this.algorithm.step(this);
+                boolean changed = this.algorithm.step(this);
+                if (changed) {
+                    panel.removeAll();
+                    vertices.forEach(vertex -> {
+                        vertex.setParentGraph(this);
+                        panel.add(vertex.getPanel());
+                    });
+                    this.redraw();
+                }
                 graphLock.unlock();
                 panel.invalidate();
                 panel.repaint();
@@ -356,7 +386,15 @@ public class Graph<V, E> {
                         }
                         if (this.algorithm != null) {
                             graphLock.lock();
-                            this.algorithm.step(this);
+                            boolean changed = this.algorithm.step(this);
+                            if (changed) {
+                                panel.removeAll();
+                                vertices.forEach(vertex -> {
+                                    vertex.setParentGraph(this);
+                                    panel.add(vertex.getPanel());
+                                });
+                                this.redraw();
+                            }
                             graphLock.unlock();
                             panel.invalidate();
                             panel.repaint();

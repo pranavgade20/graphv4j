@@ -4,8 +4,9 @@ public interface Algorithm<V, E> {
     /**
      * invoked when "step" button is clicked. should modify the graph according to algorithm being implemented.
      * @param graph the graph to apply one step of algorithm on
+     * @return true if vertices were not changed, false otherwise
      */
-    void step(Graph<V, E> graph);
+    boolean step(Graph<V, E> graph);
 
     /**
      * invoked when the "new vertex" button is clicked
